@@ -1,14 +1,33 @@
-import csv
-import random
-import string
+import csv, random, string, hashlib
 from datetime import datetime, timedelta
-import hashlib
+from faker import Faker
+import random
+fake = Faker()
 
 def random_string(n=8):
     return ''.join(random.choices(string.ascii_lowercase, k=n))
 
-def random_email():
-    return f"{random_string(6)}@example.com"
+def random_username():
+    first = fake.first_name()
+    last = fake.last_name()
+    options = [
+        first,
+        first + last,
+        first + str(random.randint(1, 9999)),
+        fake.user_name(),
+        first + random.choice(["x", "y", "z"])
+    ]
+    return random.choice(options)
+
+def random_email(username):
+    domains = ["@gmail.com","@hotmail.com","@icloud.com",
+                "@yahoo.com","@protonmail.com","@example.org"]
+    # bias: 70% chance for gmail/hotmail/icloud
+    if random.random() < 0.7:
+        domain = random.choice(domains[:3])
+    else:
+        domain = random.choice(domains[3:])
+    return f"{username.lower()}{random.randint(1,999)}{domain}"
 
 def random_hash():
     return hashlib.sha256(random_string(16).encode()).hexdigest()
@@ -19,49 +38,69 @@ def random_date(start_year=2020, end_year=2025):
     delta = end - start
     return start + timedelta(days=random.randint(0, delta.days))
 
+def write_csv(path, header, rows):
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writeheader()
+        writer.writerows(rows)
+
+# USERS
 def generate_users(n, path):
     rows = []
-    for i in range(1, n+1):
+    usernames = set()
+    for _ in range(n):
+        while True:
+            uname = random_username()
+            if uname not in usernames:
+                usernames.add(uname)
+                break
+        email = random_email(uname)
         rows.append({
-            "user_id": i,
-            "username": random_string(8),
-            "email": random_email(),
+            "email": email,
+            "username": uname,
             "pfp_hash": random_hash(),
             "create_date": random_date().date(),
             "password_hash": random_hash()
         })
     write_csv(path, rows[0].keys(), rows)
+    return [row["email"] for row in rows]
 
+# SPREADSHEETS
 def generate_spreadsheets(n, users, path):
     rows = []
     for i in range(1, n+1):
-        user_id = random.choice(users)
+        owner = random.choice(users + [None, None])  # allow some with no owner
         rows.append({
             "sheet_id": i,
-            "user_id": user_id,
+            "user_email": owner if owner else "",
             "sheet_name": f"sheet_{random_string(5)}",
             "sheet_weight": random.randint(100, 5000),
             "sheet_pages": random.randint(1, 10),
             "upload_date": random_date().date()
         })
     write_csv(path, rows[0].keys(), rows)
+    return [row["sheet_id"] for row in rows]
 
+# FEATURES
 def generate_features(features_list, path):
-    rows = []
-    for i, feat in enumerate(features_list, 1):
-        rows.append({"feature_id": i, "feature_name": feat})
+    rows = [{"feature_id": i+1, "feature_name": feat} for i, feat in enumerate(features_list)]
     write_csv(path, rows[0].keys(), rows)
+    return rows
 
+# FEATURE RUNS
 def generate_feature_runs(n, users, sheets, features, path):
     rows = []
     for i in range(1, n+1):
+        user = random.choice(users)
+        sheet = random.choice(sheets)
+        feat = random.choice(features)
         start = random_date()
         end = start + timedelta(seconds=random.randint(1, 5000))
         rows.append({
             "feat_run_id": i,
-            "user_id": random.choice(users),
-            "sheet_id": random.choice(sheets),
-            "feature_id": random.choice(features),
+            "user_email": user,
+            "sheet_id": sheet,
+            "feature_id": feat["feature_id"],
             "input_weight": random.randint(100, 5000),
             "output_weight": random.randint(80, 4800),
             "run_status": random.choice([True, False]),
@@ -70,40 +109,38 @@ def generate_feature_runs(n, users, sheets, features, path):
             "duration_ms": int((end - start).total_seconds() * 1000)
         })
     write_csv(path, rows[0].keys(), rows)
+    return rows
 
+# FEATURE RUN DETAILS
 def generate_feature_run_details(runs, feature_map, path):
-    attr_options = {
-        "merge": ["join_type", "sort_order"],
-        "inspect": ["cell_range", "preview_rows"],
-        "split": ["split_column", "delimiter"],
-        "clean-up": ["remove_duplicates", "trim_spaces"],
-        "convert-csv": ["delimiter", "encoding"],
-        "convert-pdf": ["page_size", "orientation"],
-        "convert-json": ["indent", "flatten"],
-        "fill-series": ["series_type", "start_value", "step"],
-        "password-protect": ["password_strength", "hint"],
-        "summary-stats": ["columns", "include_median"],
-        "correlation-matrix": ["method", "columns"]
-    }
-
-    rows = []
+    detail_rows = []
     detail_id = 1
-    for run_id, feature_id in runs:
-        feature_name = feature_map[feature_id]
-        possible_attrs = attr_options.get(feature_name, ["param"])
-        attrs = random.sample(possible_attrs, random.randint(1, min(3, len(possible_attrs))))
-        for attr in attrs:
-            rows.append({
+    for run in runs:
+        feat_name = feature_map[run["feature_id"]]
+        attr_value = None
+        attr_name = None
+        if feat_name == "merge":
+            attr_name, attr_value = "amount_of_sheets", str(random.randint(2, 5))
+        elif feat_name == "split":
+            attr_name, attr_value = "percent_kept", str(random.randint(10, 90))
+        elif feat_name == "append":
+            attr_name, attr_value = "total_rows_appended", str(random.randint(100, 5000))
+        elif feat_name == "clean-up":
+            attr_name, attr_value = "cells_cleaned", str(random.randint(50, 10000))
+        elif feat_name == "convert pdf":
+            attr_name, attr_value = "final_pages", str(random.randint(1, 20))
+        elif feat_name == "fill-series":
+            attr_name, attr_value = "cells_filled", str(random.randint(5, 500))
+        elif feat_name == "correlation-matrix":
+            attr_name, attr_value = "cells_counted", str(random.randint(50, 5000))
+
+        if attr_name:  # only add when feature has details
+            detail_rows.append({
                 "detail_id": detail_id,
-                "feat_run_id": run_id,
-                "attr_name": attr,
-                "attr_value": random_string(5)
+                "feat_run_id": run["feat_run_id"],
+                "attr_name": attr_name,
+                "attr_value": attr_value
             })
             detail_id += 1
-    write_csv(path, rows[0].keys(), rows)
-
-def write_csv(path, header, rows):
-    with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=header)
-        writer.writeheader()
-        writer.writerows(rows)
+    if detail_rows:
+        write_csv(path, detail_rows[0].keys(), detail_rows)

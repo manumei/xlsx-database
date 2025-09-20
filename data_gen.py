@@ -1,28 +1,29 @@
 import db_utils as db
 
 # Parameters
-N_USERS = 10
-N_SPREADSHEETS = 20
-N_RUNS = 30
-FEATURES = ["Conversion", "Merge", "Clean-Up"]
+N_USERS = 50
+N_SPREADSHEETS = 125
+N_RUNS = 160
+FEATURES = [
+    "inspect", "merge", "split", "append", "clean-up",
+    "convert csv", "convert pdf", "convert-json",
+    "fill-series", "password-protect", "summary-stats", "correlation-matrix"
+]
 
-# 1. Generate Users
-db.generate_users(N_USERS, "users.csv")
+# 1. Users
+user_emails = db.generate_users(N_USERS, "users.csv")
 
-# 2. Generate Spreadsheets
-user_ids = list(range(1, N_USERS+1))
-db.generate_spreadsheets(N_SPREADSHEETS, user_ids, "spreadsheets.csv")
+# 2. Spreadsheets
+sheet_ids = db.generate_spreadsheets(N_SPREADSHEETS, user_emails, "spreadsheets.csv")
 
-# 3. Generate Features
-db.generate_features(FEATURES, "features.csv")
+# 3. Features
+features = db.generate_features(FEATURES, "features.csv")
+feature_map = {f["feature_id"]: f["feature_name"] for f in features}
 
-# 4. Generate Feature Runs
-sheet_ids = list(range(1, N_SPREADSHEETS+1))
-feature_ids = list(range(1, len(FEATURES)+1))
-db.generate_feature_runs(N_RUNS, user_ids, sheet_ids, feature_ids, "feature_runs.csv")
+# 4. Feature Runs
+runs = db.generate_feature_runs(N_RUNS, user_emails, sheet_ids, features, "feature_runs.csv")
 
-# 5. Generate Feature Run Details
-run_ids = list(range(1, N_RUNS+1))
-db.generate_feature_run_details(run_ids, "feature_run_details.csv")
+# 5. Feature Run Details
+db.generate_feature_run_details(runs, feature_map, "feature_run_details.csv")
 
 print("CSV mock data generated successfully.")
