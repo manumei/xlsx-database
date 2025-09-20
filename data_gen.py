@@ -26,4 +26,4 @@ runs = db.generate_feature_runs(N_RUNS, user_emails, sheet_ids, features, "featu
 # 5. Feature Run Details
 db.generate_feature_run_details(runs, feature_map, "feature_run_details.csv")
 
-# print("CSV mock data generated successfully.")
+print("CSV mock data generated successfully.")
