@@ -95,7 +95,7 @@ def generate_feature_runs(n, users, sheets, features, path):
         sheet = random.choice(sheets)
         feat = random.choice(features)
         start = random_date()
-        end = start + timedelta(seconds=random.randint(1, 5000))
+        end = start + timedelta(milliseconds=random.randint(50, 25000))
         rows.append({
             "feat_run_id": i,
             "sheet_id": sheet,
