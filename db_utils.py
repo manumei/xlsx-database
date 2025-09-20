@@ -98,15 +98,12 @@ def generate_feature_runs(n, users, sheets, features, path):
         end = start + timedelta(seconds=random.randint(1, 5000))
         rows.append({
             "feat_run_id": i,
-            "user_email": user,
             "sheet_id": sheet,
             "feature_id": feat["feature_id"],
-            "input_weight": random.randint(100, 5000),
             "output_weight": random.randint(80, 4800),
             "run_status": random.choice([True, False]),
             "run_start_date": start,
             "run_end_date": end,
-            "duration_ms": int((end - start).total_seconds() * 1000)
         })
     write_csv(path, rows[0].keys(), rows)
     return rows
