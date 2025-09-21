@@ -69,12 +69,12 @@ def generate_users(n, path):
 def generate_spreadsheets(n, users, path):
     rows = []
     for i in range(1, n+1):
-        owner = random.choice(users + [None, None])  # allow some with no owner
+        owner = random.choice(users)  # must reference an existing user
         rows.append({
             "sheet_id": i,
-            "user_email": owner if owner else "",
+            "email": owner,
             "sheet_name": f"sheet_{random_string(5)}",
-            "sheet_weight": random.randint(100, 5000),
+            "file_size": random.randint(100, 5000),
             "sheet_pages": random.randint(1, 10),
             "upload_date": random_date().date()
         })
@@ -88,12 +88,11 @@ def generate_features(features_list, path):
     return rows
 
 # FEATURE RUNS
-def generate_feature_runs(n, users, sheets, features, path):
+def generate_feature_runs(n, sheets, features, path):
     rows = []
     for i in range(1, n+1):
-        user = random.choice(users)
-        sheet = random.choice(sheets)
-        feat = random.choice(features)
+        sheet = random.choice(sheets)  # must reference an existing sheet_id
+        feat = random.choice(features)  # must reference an existing feature
         start = random_date()
         end = start + timedelta(milliseconds=random.randint(50, 25000))
         rows.append({
