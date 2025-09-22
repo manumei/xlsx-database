@@ -48,3 +48,4 @@ CREATE TABLE FeatureRunDetails (
     attr_value TEXT,
     FOREIGN KEY (feat_run_id) REFERENCES FeatureRuns(feat_run_id)
 );
+
