@@ -100,7 +100,7 @@ def generate_feature_runs(n, sheets, features, path):
             "sheet_id": sheet,
             "feature_id": feat["feature_id"],
             "output_weight": random.randint(80, 4800),
-            "run_status": random.choice([True, False]),
+            "run_status": random.choices([True, False], weights=[90, 10])[0],
             "run_start_date": start,
             "run_end_date": end,
         })
