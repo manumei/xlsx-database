@@ -9,3 +9,4 @@ SELECT u.email, COUNT(s.sheet_id) AS total_sheets
 FROM Users u
 LEFT JOIN Spreadsheets s ON u.email = s.email
 GROUP BY u.email;
+
