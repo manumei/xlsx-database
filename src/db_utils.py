@@ -91,8 +91,8 @@ def generate_features(features_list, path):
 def generate_feature_runs(n, sheets, features, path):
     rows = []
     for i in range(1, n+1):
-        sheet = random.choice(sheets)  # must reference an existing sheet_id
-        feat = random.choice(features)  # must reference an existing feature
+        sheet = random.choice(sheets)
+        feat = random.choice(features)
         start = random_date()
         end = start + timedelta(milliseconds=random.randint(50, 25000))
         rows.append({
@@ -130,7 +130,7 @@ def generate_feature_run_details(runs, feature_map, path):
         elif feat_name == "correlation-matrix":
             attr_name, attr_value = "cells_counted", str(random.randint(50, 5000))
 
-        if attr_name:  # only add when feature has details
+        if attr_name:
             detail_rows.append({
                 "detail_id": detail_id,
                 "feat_run_id": run["feat_run_id"],
